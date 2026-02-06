@@ -6,6 +6,7 @@ from app.db.session import SessionLocal
 from app.models import user as user_model
 from app.schemas import user as user_schema
 from app.core.security import get_password_hash 
+from app.api.deps import get_current_user
 
 router = APIRouter()
 
@@ -43,3 +44,11 @@ def create_user(user: user_schema.UserCreate, db: Session = Depends(get_db)):
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     users = db.query(user_model.User).offset(skip).limit(limit).all()
     return users
+
+@router.get("/me", response_model=user_schema.UserResponse)
+def read_users_me(current_user: user_model.User = Depends(get_current_user)):
+    """
+    Obtiene los datos del usuario logueado actualmente.
+    Requiere Token válido.
+    """
+    return current_user
