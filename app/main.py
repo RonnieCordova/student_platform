@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.db.session import engine, Base
 from app.models import user 
+from app.models import subject
 # Importamos el router nuevo
 from app.api.v1.router import api_router
 
