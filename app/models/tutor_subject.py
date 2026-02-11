@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, ForeignKey, Float
+from sqlalchemy.orm import relationship
 from app.db.session import Base
 
 class TutorSubject(Base):
@@ -12,3 +13,7 @@ class TutorSubject(Base):
     
     # El precio por hora de este tutor para esta materia
     hourly_rate = Column(Float, nullable=False)
+
+    # Acceder a .tutor.full_name o .subject.name
+    tutor = relationship("User") 
+    subject = relationship("Subject")
