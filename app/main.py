@@ -5,6 +5,7 @@ from app.models import subject
 # Importamos el router nuevo
 from app.api.v1.router import api_router
 from app.models import tutor_subject
+from app.models import booking
 
 # Crear tablas (Dev only)
 Base.metadata.create_all(bind=engine)
