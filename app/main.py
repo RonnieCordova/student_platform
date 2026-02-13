@@ -6,6 +6,7 @@ from app.models import subject
 from app.api.v1.router import api_router
 from app.models import tutor_subject
 from app.models import booking
+from app.models import review
 
 # Crear tablas (Dev only)
 Base.metadata.create_all(bind=engine)
