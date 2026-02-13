@@ -8,6 +8,10 @@ class BookingCreate(BaseModel):
     subject_id: int
     booking_time: datetime
 
+# actualizar el estado de la reserva
+class BookingUpdate(BaseModel):
+    status: str
+
 # Respuesta de la API enriquecida
 class BookingResponse(BaseModel):
     id: int
