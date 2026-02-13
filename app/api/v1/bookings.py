@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import or_  # Necesario para el filtro OR
+from sqlalchemy import or_
 from app.db.session import SessionLocal
 from app.models import booking as booking_model
 from app.schemas import booking as booking_schema
@@ -25,11 +25,11 @@ def create_booking(
     db: Session = Depends(get_db),
     current_user: user_model.User = Depends(get_current_user)
 ):
-    # Validar que el usuario no se reserve a si mismo
+    # Validacion de auto-reserva
     if booking.tutor_id == current_user.id:
         raise HTTPException(status_code=400, detail="No puedes reservar una clase contigo mismo")
 
-    # Validar que el tutor realmente ensena esa materia
+    # Validacion de competencia del tutor
     tutor_relation = db.query(tutor_subject_model.TutorSubject).filter(
         tutor_subject_model.TutorSubject.tutor_id == booking.tutor_id,
         tutor_subject_model.TutorSubject.subject_id == booking.subject_id
@@ -38,7 +38,7 @@ def create_booking(
     if not tutor_relation:
         raise HTTPException(status_code=400, detail="Este tutor no dicta la materia seleccionada")
 
-    # Crear la reserva
+    # Creacion del registro
     new_booking = booking_model.Booking(
         student_id=current_user.id,
         tutor_id=booking.tutor_id,
@@ -50,9 +50,21 @@ def create_booking(
     db.add(new_booking)
     db.commit()
     db.refresh(new_booking)
-    return new_booking
 
-# GET: Listar mis reservas (Como alumno o como tutor)
+    # Construccion manual de la respuesta para el POST (para incluir nombres)
+    return {
+        "id": new_booking.id,
+        "student_id": new_booking.student_id,
+        "tutor_id": new_booking.tutor_id,
+        "subject_id": new_booking.subject_id,
+        "booking_time": new_booking.booking_time,
+        "status": new_booking.status,
+        "student_name": current_user.full_name or current_user.email,
+        "tutor_name": tutor_relation.tutor.full_name or tutor_relation.tutor.email,
+        "subject_name": tutor_relation.subject.name
+    }
+
+# GET: Listar reservas enriquecidas
 @router.get("/", response_model=List[booking_schema.BookingResponse])
 def read_bookings(
     skip: int = 0, 
@@ -60,9 +72,7 @@ def read_bookings(
     db: Session = Depends(get_db),
     current_user: user_model.User = Depends(get_current_user)
 ):
-    """
-    Devuelve las reservas donde el usuario actual es estudiante O tutor.
-    """
+    # Filtrar reservas donde el usuario es estudiante o tutor
     bookings = db.query(booking_model.Booking).filter(
         or_(
             booking_model.Booking.student_id == current_user.id,
@@ -70,4 +80,20 @@ def read_bookings(
         )
     ).offset(skip).limit(limit).all()
     
-    return bookings
+    # Mapeo de objetos ORM a diccionario con nombres legibles
+    results = []
+    for booking in bookings:
+        results.append({
+            "id": booking.id,
+            "student_id": booking.student_id,
+            "tutor_id": booking.tutor_id,
+            "subject_id": booking.subject_id,
+            "booking_time": booking.booking_time,
+            "status": booking.status,
+            # Obtencion de nombres a traves de las relaciones SQLAlchemy
+            "student_name": booking.student.full_name if booking.student.full_name else booking.student.email,
+            "tutor_name": booking.tutor.full_name if booking.tutor.full_name else booking.tutor.email,
+            "subject_name": booking.subject.name
+        })
+    
+    return results
