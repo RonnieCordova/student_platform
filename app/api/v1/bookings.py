@@ -97,3 +97,42 @@ def read_bookings(
         })
     
     return results
+
+#Actualizar estado de la reserva (Aceptar/Rechazar)
+@router.patch("/{booking_id}", response_model=booking_schema.BookingResponse)
+def update_booking_status(
+    booking_id: int,
+    booking_update: booking_schema.BookingUpdate,
+    db: Session = Depends(get_db),
+    current_user: user_model.User = Depends(get_current_user)
+):
+    # Buscar la reserva por ID
+    booking = db.query(booking_model.Booking).filter(booking_model.Booking.id == booking_id).first()
+
+    if not booking:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+
+    # Verificar seguridad: Solo el tutor asignado puede cambiar el estado
+    if booking.tutor_id != current_user.id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Solo el tutor de esta clase puede aprobar o rechazar la reserva"
+        )
+
+    # Actualizar el estado
+    booking.status = booking_update.status
+    db.commit()
+    db.refresh(booking)
+
+    # Reconstruir la respuesta con los nombres
+    return {
+        "id": booking.id,
+        "student_id": booking.student_id,
+        "tutor_id": booking.tutor_id,
+        "subject_id": booking.subject_id,
+        "booking_time": booking.booking_time,
+        "status": booking.status,
+        "student_name": booking.student.full_name or booking.student.email,
+        "tutor_name": booking.tutor.full_name or booking.tutor.email,
+        "subject_name": booking.subject.name
+    }
