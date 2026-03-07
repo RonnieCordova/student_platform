@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean, Enum
+from sqlalchemy import Column, Float, Integer, String, Boolean, Enum
+from sqlalchemy.orm import relationship
 from app.db.session import Base
 import enum
 
@@ -16,3 +17,10 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), default=UserRole.STUDENT)
     is_active = Column(Boolean, default=True)
+
+
+# motor financiero
+    wallet_balance = Column(Float, default=0.0)
+    
+    # conecto el usuario con su historial de transacciones
+    transactions = relationship("WalletTransaction", back_populates="user")

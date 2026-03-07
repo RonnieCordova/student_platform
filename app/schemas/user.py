@@ -19,3 +19,5 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+
+    wallet_balance: float = 0.0
