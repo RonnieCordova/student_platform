@@ -1,6 +1,6 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from pydantic import BaseModel, ConfigDict
+
 
 # Datos necesarios para crear una reserva
 class BookingCreate(BaseModel):
@@ -8,9 +8,11 @@ class BookingCreate(BaseModel):
     subject_id: int
     booking_time: datetime
 
+
 # actualizar el estado de la reserva
 class BookingUpdate(BaseModel):
     status: str
+
 
 # Respuesta de la API enriquecida
 class BookingResponse(BaseModel):
@@ -20,11 +22,10 @@ class BookingResponse(BaseModel):
     subject_id: int
     booking_time: datetime
     status: str
-    
+
     # Campos nuevos para visualización humana
     student_name: str
     tutor_name: str
     subject_name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
