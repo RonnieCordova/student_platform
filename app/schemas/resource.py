@@ -1,3 +1,29 @@
+from pydantic import BaseModel, UUID4
+from typing import Optional
+from datetime import datetime
+
+class ResourceBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    file_url: str
+    file_type: str
+    subject: str
+    is_premium: bool = False
+
+# los datos que manda React cuando suben un PDF
+class ResourceCreate(ResourceBase):
+    pass 
+
+# los datos que recibe React para pintar las tarjetas en la boveda
+class ResourceOut(ResourceBase):
+    id: UUID4
+    downloads: int
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 

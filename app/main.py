@@ -9,6 +9,7 @@ from app.models import wallet_transaction
 from app.models import resource
 from app.api.v1.router import api_router
 from fastapi.middleware.cors import CORSMiddleware
+import app.db.base
 
 # Crear tablas (Dev only)
 Base.metadata.create_all(bind=engine)
@@ -17,12 +18,11 @@ app = FastAPI(title="Plataforma de Tutorías", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+
+    allow_origins=["http://localhost:5173"],  # Permite peticiones solo del localhost en el puerto 5173
+
+
+
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
