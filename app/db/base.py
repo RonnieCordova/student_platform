@@ -7,3 +7,4 @@ from app.models.tutor_subject import TutorSubject
 
 # registro el historial de la billetera
 from app.models.wallet_transaction import WalletTransaction
+from app.models.resource import Resource

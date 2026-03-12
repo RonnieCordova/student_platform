@@ -6,6 +6,7 @@ from app.api.v1 import tutors
 from app.api.v1 import bookings
 from app.api.v1 import reviews
 from app.api.v1 import wallet
+from app.api.v1 import resources
 
 api_router = APIRouter()
 
@@ -16,3 +17,4 @@ api_router.include_router(tutors.router, prefix="/tutors", tags=["Tutores"])
 api_router.include_router(bookings.router, prefix="/bookings", tags=["Reservas"])
 api_router.include_router(reviews.router, prefix="/reviews", tags=["Reseñas"])
 api_router.include_router(wallet.router, prefix="/wallet", tags=["wallet"])
+api_router.include_router(resources.router, prefix="/resources", tags=["resources (Bóveda)"])
