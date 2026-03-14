@@ -1,30 +1,37 @@
 from fastapi import FastAPI
-from app.db.session import engine, Base
-from app.models import user 
-from app.models import subject
-# Importamos el router nuevo
-from app.api.v1.router import api_router
-from app.models import tutor_subject
-from app.models import booking
-from app.models import review
 from fastapi.middleware.cors import CORSMiddleware
 
-# Crear tablas (Dev only)
+from app.db.session import engine, Base
+from app.api.v1.router import api_router
+
+# importo el índice de mis modelos para que SQLAlchemy construya todas las tablas de golpe
+import app.db.base 
+
+# construyo las tablas (Dev only)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Plataforma de Tutorías", version="1.0.0")
 
+# --- PERÍMETRO DE SEGURIDAD: CORS ---
+# defino explícitamente los dominios de mi frontend en los que confío
+origins = [
+    "http://localhost:3000", # puerto por defecto de react
+    "http://127.0.0.1:3000",
+    "http://localhost:5173", # puerto por defecto si usas vite
+]
+
+# configuro el escudo
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permite peticiones desde cualquier origen (incluyendo tu localhost)
-    allow_credentials=True,
-    allow_methods=["*"],  # Permite todos los métodos (GET, POST, etc.)
-    allow_headers=["*"],  # Permite todos los encabezados
+    allow_origins=origins, 
+    allow_credentials=True, # como esto es True, origins NO puede ser ["*"]
+    allow_methods=["*"],    # permito todos los metodos (GET, POST, PATCH, etc.)
+    allow_headers=["*"],    # permito todos los encabezados
 )
 
-# Aquí incluimos las rutas de usuarios con un prefijo
+# incluyo el enrutador principal que contiene todos mis módulos
 app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():
-    return {"mensaje": "API funcionando"}
+    return {"mensaje": "API de Tutorías funcionando y segura"}

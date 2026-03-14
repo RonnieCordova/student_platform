@@ -1,3 +1,4 @@
+# app/api/v1/resources.py
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -9,11 +10,13 @@ from app.schemas import resource as resource_schema
 from app.models import user as user_model
 from app.models import subject as subject_model
 from app.models import wallet_transaction as wallet_transaction_model
-from app.api.deps import get_current_user
+
+# Importo la llave maestra para tutores (que crearemos en deps.py)
+from app.api.deps import get_current_user, get_current_tutor
 
 router = APIRouter()
 
-PLATFORM_FEE_PERCENTAGE = 0.15 # 15% de comision en recursos premium
+PLATFORM_FEE_PERCENTAGE = 0.15 
 
 def get_db():
     db = SessionLocal()
@@ -22,12 +25,13 @@ def get_db():
     finally:
         db.close()
 
-# POST: Subir un nuevo recurso (Solo para usuarios autenticados)
+# POST: Subir un nuevo recurso (CANDADO RBAC ACTIVADO: Solo Tutores)
 @router.post("/", response_model=resource_schema.ResourceResponse, status_code=status.HTTP_201_CREATED)
 def upload_resource(
     resource_in: resource_schema.ResourceCreate,
     db: Session = Depends(get_db),
-    current_user: user_model.User = Depends(get_current_user)
+    # EXIJO la credencial de tutor para acceder a este endpoint
+    current_user: user_model.User = Depends(get_current_tutor)
 ):
     # 1. verifico si la materia existe
     subject = db.query(subject_model.Subject).filter(subject_model.Subject.id == resource_in.subject_id).first()
@@ -54,14 +58,14 @@ def upload_resource(
     db.refresh(new_resource)
     return new_resource
 
-# GET: Listar todos los recursos disponibles (con filtro opcional por materia)
+# GET: Listar todos los recursos disponibles (Abierto para cualquier usuario logueado)
 @router.get("/", response_model=List[resource_schema.ResourceResponse])
 def get_resources(
     subject_id: int = None,
     skip: int = 0, 
     limit: int = 100, 
     db: Session = Depends(get_db),
-    current_user: user_model.User = Depends(get_current_user) # requiero login para ver la boveda
+    current_user: user_model.User = Depends(get_current_user)
 ):
     query = db.query(resource_model.Resource)
     
@@ -71,7 +75,7 @@ def get_resources(
     resources = query.offset(skip).limit(limit).all()
     return resources
 
-# POST: Comprar o descargar un recurso
+# POST: Comprar o descargar un recurso (Abierto para cualquier usuario logueado)
 @router.post("/{public_id}/download", status_code=status.HTTP_200_OK)
 def download_resource(
     public_id: UUID,
@@ -95,9 +99,7 @@ def download_resource(
                 detail=f"Saldo insuficiente. El recurso cuesta ${resource.price}"
             )
 
-        # --- UPDATE ATÓMICO (Blindaje contra sesiones cruzadas) ---
-        
-        # A) Cobro al comprador
+        # A) Cobro al comprador directo en la bd
         db.query(user_model.User).filter(user_model.User.id == current_user.id).update(
             {"wallet_balance": user_model.User.wallet_balance - resource.price}
         )
@@ -110,10 +112,9 @@ def download_resource(
         )
         db.add(purchase_tx)
 
-        # B) Pago al creador del recurso (aplicando la comision de la plataforma)
+        # B) Pago al creador del recurso
         creator_payment = resource.price * (1 - PLATFORM_FEE_PERCENTAGE)
         
-        # busco al dueño actual para saber su saldo antes de sumarle
         owner = db.query(user_model.User).filter(user_model.User.id == resource.owner_id).first()
         
         db.query(user_model.User).filter(user_model.User.id == resource.owner_id).update(
